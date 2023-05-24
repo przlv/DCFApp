@@ -14,7 +14,7 @@ class DataProccessing:
     def run(self) -> pd.DataFrame:
         
         self._indicators_generation()
-        print(self.indicators)
+        return self.indicators
 
 
     def _indicators_generation(self):

@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
-import openpyxl
+from src.classDataProcessing import *
+from openpyxl import load_workbook
+
 
 class MyApp(tk.Tk):
     def __init__(self):
@@ -32,26 +34,85 @@ class MyApp(tk.Tk):
         self.to_entry.pack(side="left", padx=5)
 
         # Кнопка выбора файла
-        self.file_button = ttk.Button(self, text="Выбрать", command=self.select_file, style="My.TButton")
+        self.file_button = ttk.Button(self, text="Выбрать файл", command=self.select_file,)
         self.file_button.pack(pady=10)
 
-        # Таблица с основными показателями проекта
-        table_frame = ttk.Frame(self, style="My.TFrame")
-        table_frame.pack(pady=10)
+        # # Таблица с основными показателями проекта
+        # self.table_frame = ttk.Frame(self, style="My.TFrame")
+        # self.table_frame.pack(pady=10)
 
-        table_label = ttk.Label(table_frame, text="Основные показатели проекта:", foreground="white", background="gray")
+        # table_label = ttk.Label(self.table_frame, text="Основные показатели проекта:", foreground="white", background="gray")
+        # table_label.pack()
+
+        # columns = ("Показатель", "Ед. изм.", "Значение")
+        # self.data = [
+        #     ("NPV", "тыс. руб", ""),
+        #     ("DPI", "коэф.", ""),
+        #     ("IRR", "%", ""),
+        #     ("PP", "лет", ""),
+        #     ("DPP", "лет", "")
+        # ]
+
+        # self.table = ttk.Treeview(self.table_frame, columns=columns, show="headings")
+        # self.table.pack()
+
+        # for column in columns:
+        #     self.table.heading(column, text=column)
+
+        # for item in self.data:
+        #     self.table.insert("", tk.END, values=item)
+
+        # self.center_columns()
+
+        self.mainloop()
+
+    def select_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx"), ("Excel Files", "*.xlsm")])
+        if file_path:
+            print("Выбранный файл:", file_path)
+            self.filepath = file_path
+        
+        if '.xlsm' in file_path:
+            # Указать путь к исходному файлу XLSM
+            xlsm_file_path = file_path
+
+            # Указать путь для сохранения файла XLSX
+            xlsx_file_path = file_path.replace('.xlsm', '.xlsx')
+
+            # Загрузить файл XLSM
+            wb = load_workbook(xlsm_file_path, keep_vba=True)
+
+            # Сохранить файл в формате XLSX
+            wb.save(xlsx_file_path)
+            
+            self.filepath = xlsx_file_path
+        
+        self.run_indic()
+
+    def center_columns(self):
+        for column in self.table["columns"]:
+            self.table.column(column, anchor="center")
+    
+    def run_indic(self):
+        appdataproc = DataProccessing(self.filepath, 1, 1)
+        self.indicators = appdataproc.run()
+        
+        self.table_frame = ttk.Frame(self, style="My.TFrame")
+        self.table_frame.pack(pady=10)
+        
+        table_label = ttk.Label(self.table_frame, text="Основные показатели проекта:", foreground="white", background="gray")
         table_label.pack()
-
+        
         columns = ("Показатель", "Ед. изм.", "Значение")
         self.data = [
-            ("NPV", "тыс. руб", ""),
-            ("DPI", "коэф.", ""),
-            ("IRR", "%", ""),
-            ("PP", "лет", ""),
-            ("DPP", "лет", "")
+            ("NPV", "тыс. руб", str(self.indicators['NPV'])),
+            ("DPI", "коэф.", str(self.indicators['DPI'])),
+            ("IRR", "%", str(self.indicators['IRR'])),
+            ("PP", "лет", str(self.indicators['PP'])),
+            ("DPP", "лет", str(self.indicators['DPP']))
         ]
 
-        self.table = ttk.Treeview(table_frame, columns=columns, show="headings")
+        self.table = ttk.Treeview(self.table_frame, columns=columns, show="headings")
         self.table.pack()
 
         for column in columns:
@@ -61,30 +122,5 @@ class MyApp(tk.Tk):
             self.table.insert("", tk.END, values=item)
 
         self.center_columns()
-
-        self.mainloop()
-
-    def select_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx")])
-        if file_path:
-            print("Выбранный файл:", file_path)
-
-            # Открываем выбранный файл и считываем данные
-            try:
-                workbook = openpyxl.load_workbook(file_path)
-                worksheet = workbook.active
-
-                for i, row in enumerate(worksheet.iter_rows(values_only=True, min_row=2, max_row=6, min_col=3, max_col=3)):
-                    value = row[0]
-                    self.data[i] = (*self.data[i][:2], value)
-                    self.table.item(i, values=self.data[i])
-                    
-
-            except Exception as e:
-                print("Ошибка при чтении файла:", e)
-
-    def center_columns(self):
-        for column in self.table["columns"]:
-            self.table.column(column, anchor="center")
 
 app = MyApp()
